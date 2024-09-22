@@ -2,11 +2,37 @@
 
 import sys
 import os
+import spacy
+import numpy as np
 
 # Add the src directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from documentation_processor import DocumentationProcessor
+
+# Load the spaCy model
+nlp = spacy.load("en_core_web_lg")
+
+def cosine_similarity(vec1, vec2):
+    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+
+def semantic_similarity(concept1, concept2):
+    doc1 = nlp(concept1)
+    doc2 = nlp(concept2)
+    return doc1.similarity(doc2)
+
+def evaluate_semantic_overlap(extracted_concepts, expected_concepts, threshold=0.7):
+    matches = []
+    for extracted in extracted_concepts:
+        for expected in expected_concepts:
+            similarity = semantic_similarity(extracted, expected)
+            if similarity >= threshold:
+                matches.append((extracted, expected, similarity))
+
+    unique_matched_expected = set(match[1] for match in matches)
+    overlap_percentage = len(unique_matched_expected) / len(expected_concepts) * 100
+
+    return matches, overlap_percentage
 
 def test_documentation_processor():
     processor = DocumentationProcessor()
@@ -47,14 +73,23 @@ def test_documentation_processor():
         print(f"Extracted concepts: {extracted_concepts}")
         print(f"Expected concepts: {case['expected_concepts']}")
 
-        # Calculate overlap with expected concepts
+        # Calculate string-based overlap
         extracted_set = set(" ".join(extracted_concepts).lower().split())
         expected_set = set(" ".join(case['expected_concepts']).lower().split())
-        overlap = extracted_set & expected_set
-        overlap_percentage = len(overlap) / len(expected_set) * 100
+        string_overlap = extracted_set & expected_set
+        string_overlap_percentage = len(string_overlap) / len(expected_set) * 100
 
-        print(f"Overlap with expected concepts: {overlap_percentage:.2f}%")
-        print(f"Unique correct concepts: {overlap}")
+        print(f"String-based overlap: {string_overlap_percentage:.2f}%")
+        print(f"Unique correct concepts (string-based): {string_overlap}")
+
+        # Calculate semantic overlap
+        semantic_matches, semantic_overlap_percentage = evaluate_semantic_overlap(extracted_concepts, case['expected_concepts'])
+
+        print(f"\nSemantic-based overlap: {semantic_overlap_percentage:.2f}%")
+        print("Semantic matches:")
+        for extracted, expected, similarity in semantic_matches:
+            print(f"  {extracted} ~ {expected} (similarity: {similarity:.2f})")
+
         print("\n")
 
 if __name__ == "__main__":
