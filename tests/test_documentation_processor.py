@@ -19,7 +19,7 @@ def test_documentation_processor():
             This is a basic tool for text processing.
             It can tokenize and count words efficiently.
             """,
-            "expected_concepts": ["tool", "text", "processing", "tokenize", "count", "words", "efficiently"]
+            "expected_concepts": ["tool", "text processing", "tokenize", "count words", "efficient"]
         },
         {
             "name": "Complex README",
@@ -37,7 +37,7 @@ def test_documentation_processor():
 
             Our suite leverages the latest advancements in AI and distributed computing to deliver unparalleled performance.
             """,
-            "expected_concepts": ["data", "analysis", "machine", "learning", "visualization", "statistical", "big", "cloud", "ai", "computing"]
+            "expected_concepts": ["data analysis", "machine learning", "data visualization", "statistical analysis", "big data", "cloud integration", "AI", "distributed computing"]
         }
     ]
 
@@ -45,11 +45,13 @@ def test_documentation_processor():
         print(f"Testing: {case['name']}")
         extracted_concepts = processor.extract_key_concepts(case['content'])
         print(f"Extracted concepts: {extracted_concepts}")
-        expected_concepts = str(case['expected_concepts'])
-        print(f"Expected concepts: {expected_concepts}")
+        print(f"Expected concepts: {case['expected_concepts']}")
+
         # Calculate overlap with expected concepts
-        overlap = set(extracted_concepts) & set(case['expected_concepts'])
-        overlap_percentage = len(overlap) / len(case['expected_concepts']) * 100
+        extracted_set = set(" ".join(extracted_concepts).lower().split())
+        expected_set = set(" ".join(case['expected_concepts']).lower().split())
+        overlap = extracted_set & expected_set
+        overlap_percentage = len(overlap) / len(expected_set) * 100
 
         print(f"Overlap with expected concepts: {overlap_percentage:.2f}%")
         print(f"Unique correct concepts: {overlap}")

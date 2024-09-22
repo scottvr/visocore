@@ -1,44 +1,44 @@
 # src/documentation_processor.py
 
 from transformers import pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+nltk.download('punkt')
+nltk.download('stopwords')
 
 class DocumentationProcessor:
     def __init__(self):
         self.summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+        self.stop_words = set(stopwords.words('english'))
+        self.stop_words.update(['provide', 'use', 'using', 'used', 'can', 'may', 'also', 'get', 'well'])  # Domain-specific stopwords
 
     def extract_key_concepts(self, readme_text):
-        # Split the README into chunks if it's too long
+        # Summarize the text
         max_chunk_length = 1024
         chunks = [readme_text[i:i+max_chunk_length] for i in range(0, len(readme_text), max_chunk_length)]
 
         summaries = []
         for chunk in chunks:
-            summary = self.summarizer(chunk, max_length=100, min_length=30, do_sample=False)
+            summary = self.summarizer(chunk, max_length=150, min_length=50, do_sample=False)
             summaries.append(summary[0]['summary_text'])
 
-        # Combine summaries and extract key concepts
         combined_summary = " ".join(summaries)
-        key_concepts = self.extract_concepts_from_summary(combined_summary)
+
+        # Extract key concepts using TF-IDF
+        vectorizer = TfidfVectorizer(ngram_range=(1,2), stop_words=list(self.stop_words))
+        tfidf_matrix = vectorizer.fit_transform([combined_summary])
+        feature_names = vectorizer.get_feature_names_out()
+
+        # Get top N features with highest TF-IDF score
+        N = 10
+        tfidf_scores = tfidf_matrix.toarray()[0]
+        top_n_indices = tfidf_scores.argsort()[-N:][::-1]
+        key_concepts = [feature_names[i] for i in top_n_indices]
 
         return key_concepts
-
-    def extract_concepts_from_summary(self, summary):
-        # For the prototype, we'll use a simple keyword extraction
-        # In a more advanced version, we could use NER or topic modeling
-        import nltk
-        from nltk.corpus import stopwords
-        from nltk.tokenize import word_tokenize
-
-        nltk.download('punkt')
-        nltk.download('stopwords')
-
-        stop_words = set(stopwords.words('english'))
-        words = word_tokenize(summary.lower())
-
-        # Extract non-stopwords and remove duplicates
-        key_concepts = list(set([word for word in words if word.isalnum() and word not in stop_words]))
-
-        return key_concepts[:10]  # Return top 10 concepts
 
 # Usage example
 if __name__ == "__main__":
