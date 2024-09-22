@@ -108,7 +108,7 @@ To run Visocore and start exploring a codebase:
 python visocore.py /path/or/url/to/repository
 ```
 
-Visocore will analyze the code and generate a visual map. You can interact with the map through the command-line interface or the GUI (available soon!).
+Visocore will analyze the code and generate a visual map with the context of knowledge gleaned from the README (other documentation support coming soon.). You can interact with the map through TBD.
 
 ---
 
