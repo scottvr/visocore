@@ -59,7 +59,7 @@ class DocumentationProcessor:
 
     def identify_important_terms(self, text):
         # Use LDA for topic modeling
-        vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
+        vectorizer = TfidfVectorizer(max_df=2, min_df=0.95, stop_words='english')
         doc_term_matrix = vectorizer.fit_transform([text])
         lda = LatentDirichletAllocation(n_components=5, random_state=42)
         lda.fit(doc_term_matrix)
