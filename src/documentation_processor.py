@@ -13,7 +13,8 @@ class DocumentationProcessor:
     def __init__(self):
         self.summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
         self.stop_words = set(stopwords.words('english'))
-        self.stop_words.update(['provide', 'use', 'using', 'used', 'can', 'may', 'also', 'get', 'well'])
+        self.stop_words.update(['provide', 'use', 'using', 'used', 'can', 'may', 'also', 'get', 'well', 'suite', 'tool', 'project'])
+        self.important_terms = {'machine learning', 'data analysis', 'big data', 'cloud', 'ai', 'artificial intelligence', 'distributed computing'}
 
     def extract_key_concepts(self, readme_text):
         # Separate headers, bullet points, and content
@@ -38,13 +39,17 @@ class DocumentationProcessor:
 
         combined_text = " ".join(processed_sections)
 
+        # Boost important terms
+        for term in self.important_terms:
+            combined_text = re.sub(rf'\b{term}\b', f'{term} {term}', combined_text, flags=re.IGNORECASE)
+
         # Extract key concepts using TF-IDF
         vectorizer = TfidfVectorizer(ngram_range=(1,3), stop_words=list(self.stop_words))
         tfidf_matrix = vectorizer.fit_transform([combined_text])
         feature_names = vectorizer.get_feature_names_out()
 
         # Get top N features with highest TF-IDF score
-        N = 20  # Increased from 15 to 20
+        N = 20
         tfidf_scores = tfidf_matrix.toarray()[0]
         top_n_indices = tfidf_scores.argsort()[-N:][::-1]
         key_concepts = [feature_names[i] for i in top_n_indices]
@@ -58,8 +63,11 @@ class DocumentationProcessor:
         concepts.sort(key=lambda x: len(x.split()), reverse=True)  # Sort by number of words, descending
         final_concepts = []
         for concept in concepts:
-            if not any(concept in fc for fc in final_concepts):
-                final_concepts.append(concept)
+            # Split concepts that might be incorrectly combined
+            split_concepts = re.findall(r'\b(?:(?:machine learning|data analysis|big data|cloud integration|artificial intelligence|distributed computing)\b|(?:\w+))', concept, re.IGNORECASE)
+            for split_concept in split_concepts:
+                if split_concept.lower() not in [fc.lower() for fc in final_concepts]:
+                    final_concepts.append(split_concept)
         return final_concepts
 
 # Usage example
