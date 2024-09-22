@@ -1,4 +1,4 @@
-# Visocore
+# Visocore - VIsualize SOurce COde REpositories
 
 **Visocore** is a source code visualization and analysis tool designed to bridge the gap between high-level documentation and the actual codebase. By combining advanced static code analysis with documentation awareness and providing intuitive visualization, Visocore helps users quickly orient themselves within a large or poorly documented codebase, making it easier to debug, extend, or maintain complex projects.
 
