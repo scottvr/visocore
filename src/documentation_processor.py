@@ -16,27 +16,35 @@ class DocumentationProcessor:
         self.stop_words.update(['provide', 'use', 'using', 'used', 'can', 'may', 'also', 'get', 'well'])
 
     def extract_key_concepts(self, readme_text):
-        # Separate headers and content
+        # Separate headers, bullet points, and content
         sections = re.split(r'\n#+\s', readme_text)
-
         processed_sections = []
+
         for section in sections:
+            # Extract bullet points
+            bullet_points = re.findall(r'^\s*[-*]\s*(.+)$', section, re.MULTILINE)
+            # Remove bullet points from the section
+            section_without_bullets = re.sub(r'^\s*[-*]\s*(.+)$', '', section, flags=re.MULTILINE)
+
             # Summarize longer sections
-            if len(section.split()) > 50:
-                summary = self.summarizer(section, max_length=200, min_length=50, do_sample=False)[0]['summary_text']
+            if len(section_without_bullets.split()) > 50:
+                summary = self.summarizer(section_without_bullets, max_length=200, min_length=50, do_sample=False)[0]['summary_text']
                 processed_sections.append(summary)
             else:
-                processed_sections.append(section)
+                processed_sections.append(section_without_bullets)
+
+            # Add bullet points directly to processed sections
+            processed_sections.extend(bullet_points)
 
         combined_text = " ".join(processed_sections)
 
         # Extract key concepts using TF-IDF
-        vectorizer = TfidfVectorizer(ngram_range=(1,4), stop_words=list(self.stop_words))
+        vectorizer = TfidfVectorizer(ngram_range=(1,3), stop_words=list(self.stop_words))
         tfidf_matrix = vectorizer.fit_transform([combined_text])
         feature_names = vectorizer.get_feature_names_out()
 
         # Get top N features with highest TF-IDF score
-        N = 15  # Increased from 10 to 15
+        N = 20  # Increased from 15 to 20
         tfidf_scores = tfidf_matrix.toarray()[0]
         top_n_indices = tfidf_scores.argsort()[-N:][::-1]
         key_concepts = [feature_names[i] for i in top_n_indices]
